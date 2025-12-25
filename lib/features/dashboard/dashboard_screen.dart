@@ -13,6 +13,8 @@ import '../settings/settings_provider.dart';
 import '../settings/settings_screen.dart';
 import '../../data/local/isar_service.dart';
 import 'dashboard_provider.dart';
+import 'package:bench_breakthrough/features/dashboard/motivation_provider.dart';
+
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -119,6 +121,58 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              Consumer(
+                builder: (context, ref, child) {
+                  final message = ref.watch(motivationMessageProvider);
+                  return Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.fromLTRB(16, 16, 16, 24), // 上左右に余白、下に少し広めの余白
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF212121), // ダークグレー背景
+                      borderRadius: BorderRadius.circular(8),
+                      border: const Border(
+                        left: BorderSide(
+                          color: Colors.redAccent, // 警告色のライン
+                          width: 4,
+                        ),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "TODAY'S MISSION",
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.grey.shade500,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          message,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            fontStyle: FontStyle.italic,
+                            color: Colors.white,
+                            height: 1.3, // 行間を少し開ける
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
               // ==========================================
               // ヘッダー
               // ==========================================
