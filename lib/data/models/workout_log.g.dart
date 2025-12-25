@@ -81,9 +81,9 @@ WorkoutLog _workoutLogDeserialize(
 ) {
   final object = WorkoutLog();
   object.date = reader.readDateTime(offsets[0]);
-  object.estimated1RM = reader.readDouble(offsets[1]);
+  object.estimated1RM = reader.readDoubleOrNull(offsets[1]);
   object.id = id;
-  object.reps = reader.readLong(offsets[2]);
+  object.reps = reader.readLongOrNull(offsets[2]);
   object.weight = reader.readDouble(offsets[3]);
   return object;
 }
@@ -98,9 +98,9 @@ P _workoutLogDeserializeProp<P>(
     case 0:
       return (reader.readDateTime(offset)) as P;
     case 1:
-      return (reader.readDouble(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 2:
-      return (reader.readLong(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 3:
       return (reader.readDouble(offset)) as P;
     default:
@@ -253,8 +253,26 @@ extension WorkoutLogQueryFilter
   }
 
   QueryBuilder<WorkoutLog, WorkoutLog, QAfterFilterCondition>
+      estimated1RMIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'estimated1RM',
+      ));
+    });
+  }
+
+  QueryBuilder<WorkoutLog, WorkoutLog, QAfterFilterCondition>
+      estimated1RMIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'estimated1RM',
+      ));
+    });
+  }
+
+  QueryBuilder<WorkoutLog, WorkoutLog, QAfterFilterCondition>
       estimated1RMEqualTo(
-    double value, {
+    double? value, {
     double epsilon = Query.epsilon,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -268,7 +286,7 @@ extension WorkoutLogQueryFilter
 
   QueryBuilder<WorkoutLog, WorkoutLog, QAfterFilterCondition>
       estimated1RMGreaterThan(
-    double value, {
+    double? value, {
     bool include = false,
     double epsilon = Query.epsilon,
   }) {
@@ -284,7 +302,7 @@ extension WorkoutLogQueryFilter
 
   QueryBuilder<WorkoutLog, WorkoutLog, QAfterFilterCondition>
       estimated1RMLessThan(
-    double value, {
+    double? value, {
     bool include = false,
     double epsilon = Query.epsilon,
   }) {
@@ -300,8 +318,8 @@ extension WorkoutLogQueryFilter
 
   QueryBuilder<WorkoutLog, WorkoutLog, QAfterFilterCondition>
       estimated1RMBetween(
-    double lower,
-    double upper, {
+    double? lower,
+    double? upper, {
     bool includeLower = true,
     bool includeUpper = true,
     double epsilon = Query.epsilon,
@@ -371,8 +389,24 @@ extension WorkoutLogQueryFilter
     });
   }
 
+  QueryBuilder<WorkoutLog, WorkoutLog, QAfterFilterCondition> repsIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'reps',
+      ));
+    });
+  }
+
+  QueryBuilder<WorkoutLog, WorkoutLog, QAfterFilterCondition> repsIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'reps',
+      ));
+    });
+  }
+
   QueryBuilder<WorkoutLog, WorkoutLog, QAfterFilterCondition> repsEqualTo(
-      int value) {
+      int? value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'reps',
@@ -382,7 +416,7 @@ extension WorkoutLogQueryFilter
   }
 
   QueryBuilder<WorkoutLog, WorkoutLog, QAfterFilterCondition> repsGreaterThan(
-    int value, {
+    int? value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -395,7 +429,7 @@ extension WorkoutLogQueryFilter
   }
 
   QueryBuilder<WorkoutLog, WorkoutLog, QAfterFilterCondition> repsLessThan(
-    int value, {
+    int? value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -408,8 +442,8 @@ extension WorkoutLogQueryFilter
   }
 
   QueryBuilder<WorkoutLog, WorkoutLog, QAfterFilterCondition> repsBetween(
-    int lower,
-    int upper, {
+    int? lower,
+    int? upper, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
@@ -648,13 +682,13 @@ extension WorkoutLogQueryProperty
     });
   }
 
-  QueryBuilder<WorkoutLog, double, QQueryOperations> estimated1RMProperty() {
+  QueryBuilder<WorkoutLog, double?, QQueryOperations> estimated1RMProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'estimated1RM');
     });
   }
 
-  QueryBuilder<WorkoutLog, int, QQueryOperations> repsProperty() {
+  QueryBuilder<WorkoutLog, int?, QQueryOperations> repsProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'reps');
     });

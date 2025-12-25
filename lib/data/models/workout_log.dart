@@ -8,6 +8,6 @@ class WorkoutLog {
 
   late DateTime date;
   late double weight;
-  late int reps;
-  late double estimated1RM;
+  int? reps;
+  double? estimated1RM;
 }

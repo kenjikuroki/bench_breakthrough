@@ -75,6 +75,15 @@ class IsarService {
         .findAll();
   }
 
+  // 全ての記録を監視する (Stream)
+  Stream<List<WorkoutLog>> watchAllWorkouts() async* {
+    final isar = await db;
+    yield* isar.workoutLogs
+        .where()
+        .sortByDateDesc()
+        .watch(fireImmediately: true);
+  }
+
   // 記録を削除する
   Future<void> deleteLog(Id id) async {
     final isar = await db;

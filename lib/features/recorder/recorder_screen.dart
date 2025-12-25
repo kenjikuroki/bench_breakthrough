@@ -305,11 +305,11 @@ class _RecorderScreenState extends State<RecorderScreen> {
                                       child: Text('$setNumber', style: const TextStyle(fontSize: 12)),
                                     ),
                                     title: Text(
-                                      '${log.weight} kg x ${log.reps} reps',
+                                      '${log.weight} kg x ${log.reps ?? 1} reps',
                                       style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                                     ),
                                     trailing: Text(
-                                      '1RM: ${log.estimated1RM.toStringAsFixed(1)}',
+                                      '1RM: ${(log.estimated1RM ?? log.weight).toStringAsFixed(1)}',
                                       style: const TextStyle(color: AppColors.textSecondary),
                                     ),
                                   ),

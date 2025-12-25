@@ -6,7 +6,24 @@ part of 'dashboard_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$currentMaxHash() => r'19500938e1a137ec3008c12792c91c1bd20d8b04';
+String _$workoutHistoryHash() => r'86b30473027e55415da514adca09ea60b5f08c9f';
+
+/// See also [workoutHistory].
+@ProviderFor(workoutHistory)
+final workoutHistoryProvider =
+    AutoDisposeStreamProvider<List<WorkoutHistoryItem>>.internal(
+  workoutHistory,
+  name: r'workoutHistoryProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$workoutHistoryHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+typedef WorkoutHistoryRef
+    = AutoDisposeStreamProviderRef<List<WorkoutHistoryItem>>;
+String _$currentMaxHash() => r'8d9854a99ca1ed77d5fd0a2601075188255afb26';
 
 /// See also [CurrentMax].
 @ProviderFor(CurrentMax)
