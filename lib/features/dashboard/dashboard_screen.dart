@@ -9,6 +9,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../core/theme/app_colors.dart';
 import '../recorder/recorder_screen.dart';
+import '../settings/settings_provider.dart';
+import '../settings/settings_screen.dart';
 import '../../data/local/isar_service.dart';
 import 'dashboard_provider.dart';
 
@@ -27,38 +29,28 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   final GlobalKey _graphKey = GlobalKey();
 
   // 開閉フラグ
-  // 開閉フラグ (今回はグラフ/リストの切り替えに使用)
-  // 開閉フラグ
   bool _isHistoryOpen = false;
   // グラフ/リストの切り替え
   bool _isChartMode = true; // デフォルトはグラフモード
 
-  // ---------------------------------------------------
-  // シェア機能のロジック
-  // ---------------------------------------------------
   Future<void> _captureAndShare() async {
-    // 1. プレミアム会員チェック
     if (!_isPremiumMember) {
       _showPremiumDialog("シェア機能");
       return;
     }
 
     try {
-      // 2. 画面（Widget）を画像データに変換
       RenderRepaintBoundary? boundary = _graphKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
       if (boundary == null) return;
 
-      // pixelRatio: 3.0 にすると高画質（Retina対応）になります
       ui.Image image = await boundary.toImage(pixelRatio: 3.0);
       ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       Uint8List pngBytes = byteData!.buffer.asUint8List();
 
-      // 3. 一時フォルダに画像を保存
       final directory = await getTemporaryDirectory();
       final imagePath = await File('${directory.path}/bench_pr.png').create();
       await imagePath.writeAsBytes(pngBytes);
 
-      // 4. シェア機能を呼び出す
       await Share.shareXFiles(
         [XFile(imagePath.path)], 
         text: 'ベンチプレス 100kg突破！ #BenchBreakthrough',
@@ -69,7 +61,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     }
   }
 
-  // 課金誘導ダイアログ
   void _showPremiumDialog(String featureName) {
     showDialog(
       context: context,
@@ -89,9 +80,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
             child: const Text("アップグレード (¥480)", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
             onPressed: () {
-              // ここで実際の課金処理をする
               setState(() {
-                _isPremiumMember = true; // デモ用に購入済みにしちゃう
+                _isPremiumMember = true;
               });
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
@@ -110,6 +100,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final currentMaxAsync = ref.watch(currentMaxProvider);
     final historyAsync = ref.watch(workoutHistoryProvider);
 
+    // 設定値取得 (Unit)
+    final isLbs = ref.watch(isLbsProvider);
+    final unitString = ref.watch(unitStringProvider);
+    final targetWeight = ref.watch(targetWeightProvider); // 100 or 225
+
     final currentMax = currentMaxAsync.when(
       data: (value) => value,
       loading: () => 0.0,
@@ -117,7 +112,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
 
     return Scaffold(
-      backgroundColor: Colors.black, // ユーザー指定: 黒
+      backgroundColor: Colors.black,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -125,7 +120,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // ==========================================
-              // ヘッダー（タイトル）
+              // ヘッダー
               // ==========================================
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -142,19 +137,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         )),
                     ],
                   ),
-                  // 右上のアイコン群
                   Row(
                     children: [
-                      // シェアボタン
                       IconButton(
                         icon: const Icon(Icons.ios_share, color: Colors.white),
-                        onPressed: _captureAndShare, // 押すとシェア処理へ
+                        onPressed: _captureAndShare,
                       ),
                       const SizedBox(width: 10),
                       IconButton(
                         icon: const Icon(Icons.settings, color: Colors.grey, size: 30),
                         onPressed: () {
-                           // context.push('/settings'); 
+                           Navigator.push(
+                             context,
+                             MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                           );
                         },
                       ),
                     ],
@@ -165,54 +161,49 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               const SizedBox(height: 20),
 
               // ==========================================
-              // メインビジュアル（グラフ） (伸縮する)
-              // ==========================================
-              // ==========================================
-              // メインビジュアル（グラフ） (Expanded flex: 4)
-              // ==========================================
-              // ==========================================
-              // メインビジュアル（グラフ） (伸縮する)
+              // メインビジュアル（グラフ）
               // ==========================================
               Expanded(
-                // flexは指定せず、残りの領域をすべて使う
                 child: RepaintBoundary(
-                  key: _graphKey, // これが目印
+                  key: _graphKey,
                   child: Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     decoration: BoxDecoration(
-                      color: Colors.black, // 背景黒
+                      color: Colors.black,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: LayoutBuilder(
                       builder: (context, constraints) {
-                        // 履歴が開いて高さが極端に小さくなった時の対策
                         if (constraints.maxHeight < 50) return const SizedBox();
 
-                        // 1. まず「100kgのライン」が画面上のどの高さに来るか決める
-                        // 親Widgetの高さすべてを100kgエリアとする
-                        final double height100kg = constraints.maxHeight;
+                        final double heightTarget = constraints.maxHeight;
 
                         return Stack(
-                          alignment: Alignment.bottomCenter, // 下揃え
-                          clipBehavior: Clip.none, // 重要：枠からはみ出しても描画を許可する
+                          alignment: Alignment.bottomCenter,
+                          clipBehavior: Clip.none,
                           children: [
                             // ---------------------------------------------------
                             // 背面：アニメーションする棒
                             // ---------------------------------------------------
                             TweenAnimationBuilder<double>(
+                              // currentMax(kg)に対してアニメーション
                               tween: Tween<double>(begin: 0, end: currentMax),
-                              duration: const Duration(milliseconds: 1800), // 1.8秒
+                              duration: const Duration(milliseconds: 1800),
                               curve: Curves.easeOutExpo,
-                              builder: (context, animatedWeight, child) {
-                                // 1. 高さの計算
-                                // 黄色いライン(height100kg)が「100kg」なので、100で割る
-                                final double animatedHeight = height100kg * (animatedWeight / 100.0);
+                              builder: (context, animatedKg, child) {
+                                // 1. 表示用の値に変換 (kg -> lbs or kg)
+                                final displayVal = convertWeightToDisplay(animatedKg, isLbs);
+                                
+                                // 2. 高さの比率計算 (displayVal / targetWeight)
+                                // 例: 80kg / 100kg = 0.8
+                                // 例: 180lbs / 225lbs = 0.8
+                                final ratio = (targetWeight > 0) ? (displayVal / targetWeight) : 0.0;
+                                final double animatedHeight = heightTarget * ratio;
 
-                                // 2. 色の判定
-                                // 100kg以上ならゴールド
-                                final bool isOver100 = animatedWeight >= 100.0;
-                                final Color barColor = isOver100 ? AppColors.accent : AppColors.primary;
+                                // 3. 色の判定
+                                final bool isOverTarget = displayVal >= targetWeight;
+                                final Color barColor = isOverTarget ? AppColors.accent : AppColors.primary;
 
                                 return Stack(
                                   clipBehavior: Clip.none,
@@ -225,10 +216,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                       decoration: BoxDecoration(
                                         color: barColor, 
                                         borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
-                                        // 100kg超えなら発光させる
-                                        boxShadow: isOver100 ? [
+                                        boxShadow: isOverTarget ? [
                                           BoxShadow(
-                                            color: AppColors.accent.withValues(alpha: 0.8), // 発光を強めに
+                                            color: AppColors.accent.withValues(alpha: 0.8),
                                             blurRadius: 20,
                                             spreadRadius: 4,
                                           )
@@ -246,11 +236,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                     Positioned(
                                       bottom: animatedHeight + 8, 
                                       child: Text(
-                                        "${animatedWeight.toInt()}kg",
+                                        "${formatWeight(displayVal)}$unitString",
                                         style: TextStyle(
-                                          color: barColor, // 文字色も変わる
+                                          color: barColor,
                                           fontWeight: FontWeight.bold,
-                                          fontSize: 18, // 少し大きく
+                                          fontSize: 18,
                                           shadows: [
                                              Shadow(
                                                blurRadius: 2, 
@@ -262,32 +252,32 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                       ),
                                     ),
 
-                                    // 3. 100kg超え達成テキスト演出
+                                    // 3. 目標達成テキスト
+                                    if (heightTarget > 100)
                                     Align(
                                       alignment: Alignment.center,
-                                      // isOver100の切り替わりで自動アニメーションする
                                       child: AnimatedOpacity(
-                                        duration: const Duration(milliseconds: 300), // 0.3秒でフワッと出る
-                                        opacity: isOver100 ? 1.0 : 0.0, // 超えたら表示、それ以外は透明
+                                        duration: const Duration(milliseconds: 300),
+                                        opacity: isOverTarget ? 1.0 : 0.0,
                                         child: AnimatedScale(
-                                          duration: const Duration(milliseconds: 400), // 0.4秒でズーム
-                                          scale: isOver100 ? 1.0 : 0.5, // 超えたら等倍、それまでは半分サイズ
-                                          curve: Curves.elasticOut, // ボヨヨンと飛び出す動き
+                                          duration: const Duration(milliseconds: 400),
+                                          scale: isOverTarget ? 1.0 : 0.5,
+                                          curve: Curves.elasticOut,
                                           child: Container(
                                             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                                             decoration: BoxDecoration(
-                                              color: Colors.black.withValues(alpha: 0.7), // 背景を少し暗くして文字を強調
+                                              color: Colors.black.withValues(alpha: 0.7),
                                               borderRadius: BorderRadius.circular(10),
                                               border: Border.all(color: AppColors.accent, width: 2),
                                             ),
-                                            child: const Column(
+                                            child: Column(
                                               mainAxisSize: MainAxisSize.min,
                                               children: [
-                                                Text(
+                                                const Text(
                                                   "LIMIT BREAK!",
                                                   style: TextStyle(
                                                     color: AppColors.accent,
-                                                    fontWeight: FontWeight.w900, // 超太字
+                                                    fontWeight: FontWeight.w900,
                                                     fontSize: 24,
                                                     fontStyle: FontStyle.italic,
                                                     shadows: [
@@ -296,8 +286,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                                   ),
                                                 ),
                                                 Text(
-                                                  "100kg 超え達成！",
-                                                  style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                                                  "${formatWeight(targetWeight)}$unitString 超え達成！",
+                                                  style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
                                                 ),
                                               ],
                                             ),
@@ -311,27 +301,23 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             ),
 
                             // ---------------------------------------------------
-                            // 前面：黄色い100kgライン (基準)
+                            // 前面：ターゲットライン (100kg or 225lbs)
                             // ---------------------------------------------------
                             Container(
-                              height: height100kg, // ちょうど100kgの高さ
-                              width: double.infinity, // 横幅いっぱい
+                              height: heightTarget,
+                              width: double.infinity,
                               decoration: const BoxDecoration(
-                                // 上辺だけに黄色い線を引く
                                 border: Border(
-                                  top: BorderSide(
-                                    color: AppColors.accent, // 黄色いライン
-                                    width: 3.0, // ラインの太さ
-                                  ),
+                                  top: BorderSide(color: AppColors.accent, width: 3.0),
                                 ),
                               ),
-                              child: const Align(
+                              child: Align(
                                 alignment: Alignment.topRight,
                                 child: Padding(
-                                  padding: EdgeInsets.only(top: 4.0),
+                                  padding: const EdgeInsets.only(top: 4.0),
                                   child: Text(
-                                    "100kg",
-                                    style: TextStyle(color: AppColors.accent, fontWeight: FontWeight.bold),
+                                    "${formatWeight(targetWeight)}$unitString",
+                                    style: const TextStyle(color: AppColors.accent, fontWeight: FontWeight.bold),
                                   ),
                                 ),
                               ),
@@ -341,18 +327,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       },
                     ),
                 ),
-                  ),
                 ),
+              ),
 
               const SizedBox(height: 20),
-              
-              // ==========================================
-              // 切り替えヘッダー (1RM GRAPH <-> HISTORY LIST)
-              // ==========================================
               const SizedBox(height: 10),
               
               // ==========================================
-              // HISTORY / ANALYSIS トグルボタン (アニメーションのトリガー)
+              // HISTORY / ANALYSIS トグル
               // ==========================================
               GestureDetector(
                 onTap: () {
@@ -364,7 +346,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween, // アイコンとラベルを離す
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Row(
                         children: [
@@ -385,19 +367,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           ),
                         ],
                       ),
-                      // 閉じてる時は何も表示しないか、軽いヒントを出す? 今はシンプルに
                     ],
                   ),
                 ),
               ),
 
               // ==========================================
-              // アニメーションパネル (ビヨーンと出る)
+              // アニメーションパネル
               // ==========================================
               AnimatedContainer(
                 curve: _isHistoryOpen ? Curves.easeOutBack : Curves.easeOut,
                 duration: const Duration(milliseconds: 500),
-                height: _isHistoryOpen ? 320.0 : 0.0, // 高さを確保 (トグルボタン分含める)
+                height: _isHistoryOpen ? 320.0 : 0.0,
                 clipBehavior: Clip.hardEdge, 
                 decoration: const BoxDecoration(),
                 
@@ -407,18 +388,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     height: 320, 
                     child: Column(
                       children: [
-                        // Header for the chart/list section
                         Align(
                           alignment: Alignment.centerLeft,
                           child: Padding(
                             padding: const EdgeInsets.only(bottom: 8.0),
                             child: Text(
-                              _isChartMode ? "MAX WEIGHT" : "WORKOUT HISTORY",
+                              _isChartMode ? "MAX WEIGHT ($unitString)" : "WORKOUT HISTORY",
                               style: const TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.0)
                             ),
                           ),
                         ),
-                        // 1. 内部トグル (Graph <-> List)
                         Padding(
                           padding: const EdgeInsets.only(bottom: 10),
                           child: Row(
@@ -438,7 +417,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           ),
                         ),
 
-                        // 2. コンテンツエリア
                         Expanded(
                           child: _isChartMode 
                             // ------------------------------------
@@ -446,9 +424,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             // ------------------------------------
                             ? GestureDetector(
                                 onTap: () {
-                        // ロック中ならダイアログを出す
-                        if (!_isPremiumMember) _showPremiumDialog("MAX重量推移グラフ");
-                      },
+                                  if (!_isPremiumMember) _showPremiumDialog("MAX重量推移グラフ");
+                                },
                                 child: Container(
                                   padding: const EdgeInsets.only(right: 20, top: 10, bottom: 10),
                                   decoration: BoxDecoration(
@@ -476,32 +453,33 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                               borderData: FlBorderData(show: false),
                                               lineBarsData: [
                                                 LineChartBarData(
-                                        spots: reversedList.asMap().entries.map((e) {
-                                          return FlSpot(e.key.toDouble(), e.value.weightValue);
-                                        }).toList(),
-                                        isCurved: true, // 滑らかな曲線
-                                        color: AppColors.primary, // 1RM(Orange)と区別してPrimary(Cyan)に戻す
-                                        barWidth: 3,
-                                        isStrokeCapRound: true,
-                                        dotData: FlDotData(show: false), // ドットは非表示
-                                        belowBarData: BarAreaData(show: true, color: AppColors.primary.withValues(alpha: 0.2)), // 下を塗る
-                                      ),
-                                    ],
-                                    // インタラクション設定
-                                    lineTouchData: LineTouchData(
-                                      touchTooltipData: LineTouchTooltipData(
-                                        getTooltipColor: (touchedSpot) => Colors.blueGrey,
-                                        getTooltipItems: (touchedSpots) {
-                                          return touchedSpots.map((spot) {
-                                            final record = reversedList[spot.x.toInt()];
-                                            return LineTooltipItem(
-                                              "${record.date}\nWeight: ${spot.y.toInt()}kg",
-                                              const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                                            );
-                                          }).toList();
-                                        },
-                                      ),
-                                    ),
+                                                  spots: reversedList.asMap().entries.map((e) {
+                                                    // Y軸を現在の単位に変換
+                                                    final displayY = convertWeightToDisplay(e.value.weightValue, isLbs);
+                                                    return FlSpot(e.key.toDouble(), displayY);
+                                                  }).toList(),
+                                                  isCurved: true,
+                                                  color: AppColors.primary, 
+                                                  barWidth: 3,
+                                                  isStrokeCapRound: true,
+                                                  dotData: FlDotData(show: false),
+                                                  belowBarData: BarAreaData(show: true, color: AppColors.primary.withValues(alpha: 0.2)),
+                                                ),
+                                              ],
+                                              lineTouchData: LineTouchData(
+                                                touchTooltipData: LineTouchTooltipData(
+                                                  getTooltipColor: (touchedSpot) => Colors.blueGrey,
+                                                  getTooltipItems: (touchedSpots) {
+                                                    return touchedSpots.map((spot) {
+                                                      final record = reversedList[spot.x.toInt()];
+                                                      return LineTooltipItem(
+                                                        "${record.date}\nWeight: ${spot.y.toInt()}$unitString",
+                                                        const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                                      );
+                                                    }).toList();
+                                                  },
+                                                ),
+                                              ),
                                             ),
                                           );
                                         }
@@ -545,55 +523,54 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                     separatorBuilder: (context, index) => const Divider(color: Colors.white12, height: 1),
                                     itemBuilder: (context, index) {
                                       final item = historyList[index];
-                            return Dismissible(
-                              key: ValueKey(item.id),
-                              direction: DismissDirection.endToStart,
-                              background: Container(
-                                alignment: Alignment.centerRight,
-                                padding: const EdgeInsets.only(right: 20),
-                                color: AppColors.error,
-                                child: const Icon(Icons.delete, color: Colors.white),
-                              ),
-                              onDismissed: (_) async {
-                                // 1. DB削除
-                                final service = IsarService();
-                                await service.deleteLog(item.id);
-                                
-                                // 2. Max重量の再計算が必要かもしれないので無効化
-                                // (StreamProviderは自動更新されるが、FutureProviderのcurrentMaxは手動更新が必要)
-                                ref.invalidate(currentMaxProvider);
+                                      
+                                      // 単位変換
+                                      final displayWeightVal = convertWeightToDisplay(item.weightValue, isLbs);
+                                      final displayWeightStr = "${formatWeight(displayWeightVal)}$unitString";
 
-                                // 3. 完了メッセージ
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text("Record deleted")),
-                                  );
-                                }
-                              },
-                              child: ListTile(
-                                contentPadding: EdgeInsets.zero,
-                                dense: true,
-                                title: Text(item.date, style: const TextStyle(color: Colors.grey, fontFamily: 'monospace')),
-                                subtitle: Text("${item.reps} reps", style: const TextStyle(color: Colors.white30, fontSize: 12)),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      item.weight,
-                                      style: TextStyle(
-                                        color: item.isPersonalBest ? AppColors.accent : Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16
-                                      )
-                                    ),
-                                    if (item.isPersonalBest) ...[
-                                      const SizedBox(width: 5),
-                                      const Icon(Icons.star, color: AppColors.accent, size: 14)
-                                    ],
-                                  ],
-                                ),
-                              ),
-                            );
+                                      return Dismissible(
+                                        key: ValueKey(item.id),
+                                        direction: DismissDirection.endToStart,
+                                        background: Container(
+                                          alignment: Alignment.centerRight,
+                                          padding: const EdgeInsets.only(right: 20),
+                                          color: AppColors.error,
+                                          child: const Icon(Icons.delete, color: Colors.white),
+                                        ),
+                                        onDismissed: (_) async {
+                                          final service = IsarService();
+                                          await service.deleteLog(item.id);
+                                          ref.invalidate(currentMaxProvider);
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(content: Text("Record deleted")),
+                                            );
+                                          }
+                                        },
+                                        child: ListTile(
+                                          contentPadding: EdgeInsets.zero,
+                                          dense: true,
+                                          title: Text(item.date, style: const TextStyle(color: Colors.grey, fontFamily: 'monospace')),
+                                          subtitle: Text("${item.reps} reps", style: const TextStyle(color: Colors.white30, fontSize: 12)),
+                                          trailing: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(
+                                                displayWeightStr,
+                                                style: TextStyle(
+                                                  color: item.isPersonalBest ? AppColors.accent : Colors.white,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 16
+                                                )
+                                              ),
+                                              if (item.isPersonalBest) ...[
+                                                const SizedBox(width: 5),
+                                                const Icon(Icons.star, color: AppColors.accent, size: 14)
+                                              ],
+                                            ],
+                                          ),
+                                        ),
+                                      );
                                     },
                                   );
                                 },
@@ -607,24 +584,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
               const SizedBox(height: 20), // ボタンとの隙間
 
-              // ==========================================
-              // ボタン（固定）
-              // ==========================================
               SizedBox(
                 width: double.infinity,
                 height: 60,
                 child: ElevatedButton(
                   onPressed: () async {
-                    // Navigate to RecorderScreen
+                    // RecorderScreenに現在のMax(kg)を渡す
+                    // RecorderScreen側でisLbsを見て初期値を適切に設定する必要がある
                     await Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => RecorderScreen(initialWeight: currentMax),
                       ),
                     );
-                    // 戻ってきたらデータを再読み込み
                     ref.invalidate(currentMaxProvider);
-                    // refresh is automatic for stream provider
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,

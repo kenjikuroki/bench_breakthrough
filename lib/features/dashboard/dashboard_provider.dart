@@ -1,4 +1,5 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:fl_chart/fl_chart.dart';
 import '../../data/local/isar_service.dart';
 
 part 'dashboard_provider.g.dart';
@@ -11,7 +12,7 @@ class CurrentMax extends _$CurrentMax {
     final service = IsarService();
     return await service.getBestWeight();
   }
-  }
+}
 
 
 // -------------------------------------------------------------
@@ -106,3 +107,58 @@ Stream<List<WorkoutHistoryItem>> workoutHistory(WorkoutHistoryRef ref) async* {
   }
 }
 
+// -------------------------------------------------------------
+// AI予測ロジック (線形回帰)
+// -------------------------------------------------------------
+@riverpod
+Future<List<FlSpot>> predictionSpots(PredictionSpotsRef ref) async {
+  // 履歴を取得
+  final history = await ref.watch(workoutHistoryProvider.future);
+  
+  // データ不足なら予測なし
+  if (history.length < 2) return [];
+
+  // 直近のデータ(最大10件)を使ってトレンドを計算
+  // 履歴は新しい順(desc)で来る可能性が高いが、グラフは古い順(asc)で描画している
+  // ここではグラフのX軸に合わせて「古い順」に直して計算する
+  final sortedHistory = history.reversed.toList();
+  final int n = sortedHistory.length;
+  
+  // 単回帰分析: y = ax + b
+  double sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+  
+  for (int i = 0; i < n; i++) {
+    double x = i.toDouble();
+    double y = sortedHistory[i].weightValue;
+    
+    sumX += x;
+    sumY += y;
+    sumXY += x * y;
+    sumX2 += x * x;
+  }
+
+  final double slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+  final double intercept = (sumY - slope * sumX) / n;
+
+  // 予測: 次の5回分、または100kgに達するまで
+  List<FlSpot> spots = [];
+  
+  // 現在の最後のX座標
+  int lastX = n - 1;
+  
+  // 次のポイントから予測
+  for (int i = 1; i <= 10; i++) {
+    double futureX = (lastX + i).toDouble();
+    double futureY = slope * futureX + intercept;
+    
+    // 変な値(マイナスなど)は除外
+    if (futureY < 0) futureY = 0;
+    
+    spots.add(FlSpot(futureX, futureY));
+
+    // 100kg(または+α)を超えたら予測終了
+    if (futureY >= 110) break;
+  }
+
+  return spots;
+}

@@ -1,28 +1,33 @@
 import 'dart:async';
+import 'dart:io';
+import 'dart:ui'; // FontFeatureのため
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'; // Riverpod
 import 'package:gap/gap.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:bench_breakthrough/core/theme/app_colors.dart';
 import 'package:bench_breakthrough/core/utils/one_rm_calculator.dart';
 import '../../data/local/isar_service.dart';
 import '../../data/models/workout_log.dart';
+import '../settings/settings_provider.dart'; // Settings
 
-class RecorderScreen extends StatefulWidget {
+class RecorderScreen extends ConsumerStatefulWidget {
   final double initialWeight;
   const RecorderScreen({super.key, required this.initialWeight});
 
   @override
-  State<RecorderScreen> createState() => _RecorderScreenState();
+  ConsumerState<RecorderScreen> createState() => _RecorderScreenState();
 }
 
-class _RecorderScreenState extends State<RecorderScreen> {
+class _RecorderScreenState extends ConsumerState<RecorderScreen> {
   // 初期値
   late double _selectedWeight;
   int _selectedReps = 8;
   
-  // 重量の選択肢 (20kg ~ 200kg, 2.5kg刻み)
-  final List<double> _weightOptions = List.generate(
-    73, (index) => 20.0 + (index * 2.5));
+  late List<double> _weightOptions;
+  late bool _isLbs;
+  bool _initialized = false;
     
   // 回数の選択肢 (1回 ~ 30回)
   final List<int> _repOptions = List.generate(30, (index) => index + 1);
@@ -36,16 +41,116 @@ class _RecorderScreenState extends State<RecorderScreen> {
   int _remainingSeconds = 0;
   bool _isTimerRunning = false;
 
+  // 広告関連
+  InterstitialAd? _interstitialAd;
+  bool _isAdLoaded = false;
+  
+  // テスト用ID (本番時は差し替えが必要)
+  // Android Test ID
+  final String _adUnitIdAndroid = 'ca-app-pub-3940256099942544/1033173712';
+  // iOS Test ID
+  final String _adUnitIdIos = 'ca-app-pub-3940256099942544/4411468910';
+
+  String get _adUnitId {
+    if (Platform.isAndroid) return _adUnitIdAndroid;
+    if (Platform.isIOS) return _adUnitIdIos;
+    return ''; // Unsupported platform
+  }
+
   @override
-  void initState() {
-    super.initState();
-    // 渡された初期値を使う（有効な値でなければ60kg）
-    if (widget.initialWeight > 0) {
-        _selectedWeight = widget.initialWeight;
-    } else {
-        _selectedWeight = 60.0;
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_initialized) {
+      // 設定を読み込み
+      _isLbs = ref.read(isLbsProvider);
+
+      if (_isLbs) {
+        // Lbs Mode: 45lbs ~ 495lbs (5lbs step)
+        _weightOptions = List.generate(91, (index) => 45.0 + (index * 5.0));
+      } else {
+        // Kg Mode: 20kg ~ 200kg (0.25kg step)
+        _weightOptions = List.generate(721, (index) => 20.0 + (index * 0.25));
+      }
+
+      // 初期選択値の決定
+      // widget.initialWeightは常にKGで来る
+      final double initKg = widget.initialWeight > 0 ? widget.initialWeight : 60.0;
+      
+      // 現在の単位系に合わせて変換
+      final double targetVal = _isLbs ? convertWeightToDisplay(initKg, true) : initKg;
+
+      // 最も近い選択肢を選ぶ
+      _selectedWeight = _weightOptions.reduce((a, b) => 
+        (a - targetVal).abs() < (b - targetVal).abs() ? a : b);
+
+      _loadTodaysSession();
+      // モバイルのみ広告ロード
+      if (Platform.isAndroid || Platform.isIOS) {
+        _loadInterstitialAd(); 
+      }
+      _initialized = true;
     }
-    _loadTodaysSession();
+  }
+
+  // 広告ロード処理
+  void _loadInterstitialAd() {
+    if (_adUnitId.isEmpty) return;
+    
+    InterstitialAd.load(
+      adUnitId: _adUnitId,
+      request: const AdRequest(),
+      adLoadCallback: InterstitialAdLoadCallback(
+        onAdLoaded: (InterstitialAd ad) {
+          debugPrint('$ad loaded');
+          _interstitialAd = ad;
+          _isAdLoaded = true;
+          _interstitialAd!.setImmersiveMode(true);
+        },
+        onAdFailedToLoad: (LoadAdError error) {
+          debugPrint('InterstitialAd failed to load: $error.');
+          _interstitialAd = null;
+          _isAdLoaded = false;
+        },
+      ),
+    );
+  }
+
+  // 終了ボタン処理
+  void _finishWorkout() {
+    // モバイル以外または広告IDがない場合は即終了
+    if (!(Platform.isAndroid || Platform.isIOS)) {
+      Navigator.pop(context);
+      return;
+    }
+
+    final isPremium = ref.read(isPremiumProvider).value ?? false;
+
+    // プレミアム会員、または広告がロードされていない場合はそのまま終了
+    if (isPremium || !_isAdLoaded || _interstitialAd == null) {
+      Navigator.pop(context);
+      return;
+    }
+
+    // 広告表示
+    _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
+      onAdShowedFullScreenContent: (InterstitialAd ad) =>
+          debugPrint('ad onAdShowedFullScreenContent.'),
+      onAdDismissedFullScreenContent: (InterstitialAd ad) {
+        debugPrint('$ad onAdDismissedFullScreenContent.');
+        ad.dispose();
+        // 広告を閉じたら画面も閉じる
+        if (mounted) Navigator.pop(context);
+      },
+      onAdFailedToShowFullScreenContent: (InterstitialAd ad, AdError error) {
+        debugPrint('$ad onAdFailedToShowFullScreenContent: $error');
+        ad.dispose();
+        // 失敗しても画面は閉じる
+        if (mounted) Navigator.pop(context);
+      },
+    );
+
+    _interstitialAd!.show();
+    _interstitialAd = null; // 使い捨てなのでnullにする
   }
 
   Future<void> _loadTodaysSession() async {
@@ -62,6 +167,7 @@ class _RecorderScreenState extends State<RecorderScreen> {
   @override
   void dispose() {
     _timer?.cancel();
+    _interstitialAd?.dispose();
     super.dispose();
   }
 
@@ -99,15 +205,19 @@ class _RecorderScreenState extends State<RecorderScreen> {
   }
 
   Future<void> _saveLog() async {
-    // リアルタイム計算値を参照
-    final currentEstMax = OneRmCalculator.calculate(_selectedWeight, _selectedReps);
+    // DB保存用にKGに変換
+    // _selectedWeightは現在の単位系の値（lbsならlbs）
+    final double weightInKg = convertWeightToStorage(_selectedWeight, _isLbs);
+
+    // 1RM計算 (保存用)
+    final double estMaxKg = OneRmCalculator.calculate(weightInKg, _selectedReps);
 
     final service = IsarService();
     final newLog = WorkoutLog()
       ..date = DateTime.now()
-      ..weight = _selectedWeight
+      ..weight = weightInKg // 常にKGで保存
       ..reps = _selectedReps
-      ..estimated1RM = currentEstMax;
+      ..estimated1RM = estMaxKg; // 常にKGで保存
 
     // 1. DB保存
     await service.saveWorkout(newLog);
@@ -124,8 +234,9 @@ class _RecorderScreenState extends State<RecorderScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // リアルタイムで1RMを計算
+    // リアルタイムで1RMを計算 (表示用)
     final currentEstMax = OneRmCalculator.calculate(_selectedWeight, _selectedReps);
+    final unitLabel = _isLbs ? 'lbs' : 'kg';
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -137,9 +248,7 @@ class _RecorderScreenState extends State<RecorderScreen> {
         actions: [
           // 終了ボタン
           TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
+            onPressed: _finishWorkout, // 広告チェック処理へ
             child: const Text('FINISH', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
           ),
         ],
@@ -147,8 +256,7 @@ class _RecorderScreenState extends State<RecorderScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // --- タイマー表示 (稼働中のみ、または常に表示して00:00にするか) ---
-            // ここでは常時表示とし、稼働中は目立たせる
+            // --- タイマー表示 ---
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8.0),
               child: AnimatedContainer(
@@ -186,10 +294,10 @@ class _RecorderScreenState extends State<RecorderScreen> {
                 const Text('ESTIMATED 1RM', 
                   style: TextStyle(color: AppColors.textSecondary, letterSpacing: 1.5)),
                 Text(
-                  '${currentEstMax.toStringAsFixed(1)} kg',
+                  '${currentEstMax.toStringAsFixed(1)} $unitLabel',
                   style: Theme.of(context).textTheme.displayLarge?.copyWith(
                     color: AppColors.primary,
-                    fontSize: 56, // 少し小さく調整
+                    fontSize: 56, 
                   ),
                 ),
               ],
@@ -208,7 +316,7 @@ class _RecorderScreenState extends State<RecorderScreen> {
                     Expanded(
                       child: _buildPicker<double>(
                         label: 'WEIGHT',
-                        unit: 'kg',
+                        unit: unitLabel,
                         options: _weightOptions,
                         selectedValue: _selectedWeight,
                         onChanged: (value) => setState(() => _selectedWeight = value),
@@ -270,6 +378,11 @@ class _RecorderScreenState extends State<RecorderScreen> {
                               itemBuilder: (context, index) {
                                 final log = _sessionLogs[index];
                                 final setNumber = _sessionLogs.length - index;
+
+                                // 表示用に変換
+                                final double displayW = convertWeightToDisplay(log.weight, _isLbs);
+                                final double display1RM = convertWeightToDisplay(log.estimated1RM ?? 0, _isLbs);
+
                                 return Dismissible(
                                   key: Key(log.id.toString()), // IDをキーにする
                                   direction: DismissDirection.endToStart, // 右から左へスワイプ
@@ -305,11 +418,11 @@ class _RecorderScreenState extends State<RecorderScreen> {
                                       child: Text('$setNumber', style: const TextStyle(fontSize: 12)),
                                     ),
                                     title: Text(
-                                      '${log.weight} kg x ${log.reps ?? 1} reps',
+                                      '${formatWeight(displayW)} $unitLabel x ${log.reps ?? 1} reps',
                                       style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                                     ),
                                     trailing: Text(
-                                      '1RM: ${(log.estimated1RM ?? log.weight).toStringAsFixed(1)}',
+                                      '1RM: ${display1RM.toStringAsFixed(1)}',
                                       style: const TextStyle(color: AppColors.textSecondary),
                                     ),
                                   ),
@@ -327,7 +440,6 @@ class _RecorderScreenState extends State<RecorderScreen> {
     );
   }
 
-  // ピッカーを作る共通ウィジェット
   Widget _buildPicker<T>({
     required String label,
     required String unit,
@@ -336,8 +448,9 @@ class _RecorderScreenState extends State<RecorderScreen> {
     required ValueChanged<T> onChanged,
   }) {
     // 初期位置の計算
-    final initialIndex = options.indexOf(selectedValue);
-    
+    int initialIndex = options.indexOf(selectedValue);
+    if (initialIndex == -1) initialIndex = 0; // 万が一見つからない場合
+
     return Column(
       children: [
         Text(label, style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
@@ -356,7 +469,11 @@ class _RecorderScreenState extends State<RecorderScreen> {
               },
               children: options.map((option) => Center(
                 child: Text(
-                  '$option $unit',
+                  // 小数点の処理はformatWeightではなくここで簡易的にやってもいいが、
+                  // optionがdoubleならtoStringAsFixed(2)等で出す
+                  T == double 
+                      ? formatWeight(option as double) + " $unit"
+                      : '$option $unit',
                   style: const TextStyle(color: Colors.white, fontSize: 20),
                 ),
               )).toList(),
