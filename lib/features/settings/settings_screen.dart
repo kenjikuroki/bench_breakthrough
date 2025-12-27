@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:bench_breakthrough/l10n/generated/app_localizations.dart';
 import '../../core/theme/app_colors.dart';
 import 'settings_provider.dart';
 
@@ -15,15 +16,15 @@ class SettingsScreen extends ConsumerWidget {
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: const Text('SETTINGS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text(AppLocalizations.of(context)!.settings.toUpperCase(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: ListView(
         children: [
           const SizedBox(height: 20),
-          _buildSectionHeader('UNIT SYSTEM'),
+          _buildSectionHeader(AppLocalizations.of(context)!.general.toUpperCase()),
           SwitchListTile(
-            title: const Text('Use Pounds (lbs)', style: TextStyle(color: Colors.white)),
+            title: Text(AppLocalizations.of(context)!.usePounds, style: const TextStyle(color: Colors.white)),
             subtitle: Text(
               isLbs ? 'Target: 225 lbs' : 'Target: 100 kg', 
               style: const TextStyle(color: Colors.grey)
@@ -38,23 +39,23 @@ class SettingsScreen extends ConsumerWidget {
           
           const Divider(color: Colors.white24, height: 40),
 
-          _buildSectionHeader('ABOUT'),
+          _buildSectionHeader(AppLocalizations.of(context)!.about.toUpperCase()),
            ListTile(
-            title: const Text('Privacy Policy', style: TextStyle(color: Colors.white)),
+            title: Text(AppLocalizations.of(context)!.privacyPolicy, style: const TextStyle(color: Colors.white)),
             trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 16),
             onTap: () {
               // TODO: Open URL
             },
           ),
            ListTile(
-            title: const Text('Terms of Service', style: TextStyle(color: Colors.white)),
+            title: Text(AppLocalizations.of(context)!.termsOfService, style: const TextStyle(color: Colors.white)),
             trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 16),
              onTap: () {
               // TODO: Open URL
             },
           ),
            ListTile(
-            title: const Text('Version', style: TextStyle(color: Colors.white)),
+            title: Text(AppLocalizations.of(context)!.appVersion, style: const TextStyle(color: Colors.white)),
             trailing: const Text('1.0.0', style: TextStyle(color: Colors.grey)),
           ),
         ],

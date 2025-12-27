@@ -11,6 +11,8 @@ import 'package:bench_breakthrough/core/utils/one_rm_calculator.dart';
 import '../../data/local/isar_service.dart';
 import '../../data/models/workout_log.dart';
 import '../settings/settings_provider.dart'; // Settings
+import 'package:bench_breakthrough/l10n/generated/app_localizations.dart';
+
 
 class RecorderScreen extends ConsumerStatefulWidget {
   final double initialWeight;
@@ -249,7 +251,7 @@ class _RecorderScreenState extends ConsumerState<RecorderScreen> {
           // 終了ボタン
           TextButton(
             onPressed: _finishWorkout, // 広告チェック処理へ
-            child: const Text('FINISH', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+            child: Text(AppLocalizations.of(context)!.finish, style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -291,8 +293,8 @@ class _RecorderScreenState extends ConsumerState<RecorderScreen> {
             // --- リアルタイム計算結果 ---
             Column(
               children: [
-                const Text('ESTIMATED 1RM', 
-                  style: TextStyle(color: AppColors.textSecondary, letterSpacing: 1.5)),
+                Text(AppLocalizations.of(context)!.estimated1rm, 
+                  style: const TextStyle(color: AppColors.textSecondary, letterSpacing: 1.5)),
                 Text(
                   '${currentEstMax.toStringAsFixed(1)} $unitLabel',
                   style: Theme.of(context).textTheme.displayLarge?.copyWith(
@@ -315,7 +317,7 @@ class _RecorderScreenState extends ConsumerState<RecorderScreen> {
                     // 重量
                     Expanded(
                       child: _buildPicker<double>(
-                        label: 'WEIGHT',
+                        label: AppLocalizations.of(context)!.weight,
                         unit: unitLabel,
                         options: _weightOptions,
                         selectedValue: _selectedWeight,
@@ -326,7 +328,7 @@ class _RecorderScreenState extends ConsumerState<RecorderScreen> {
                     // 回数
                     Expanded(
                       child: _buildPicker<int>(
-                        label: 'REPS',
+                        label: AppLocalizations.of(context)!.reps,
                         unit: 'reps',
                         options: _repOptions,
                         selectedValue: _selectedReps,
@@ -348,7 +350,7 @@ class _RecorderScreenState extends ConsumerState<RecorderScreen> {
                 height: 56,
                 child: ElevatedButton(
                   onPressed: _saveLog,
-                  child: const Text('SAVE SET'),
+                  child: Text(AppLocalizations.of(context)!.saveSet),
                 ),
               ),
             ),
@@ -368,11 +370,11 @@ class _RecorderScreenState extends ConsumerState<RecorderScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Gap(16),
-                    const Text("TODAY'S SETS", style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.bold)),
+                    Text(AppLocalizations.of(context)!.todaysSets, style: const TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.bold)),
                     const Gap(8),
                     Expanded(
                       child: _sessionLogs.isEmpty
-                          ? const Center(child: Text('No sets yet', style: TextStyle(color: AppColors.textSecondary)))
+                          ? Center(child: Text(AppLocalizations.of(context)!.noSetsYet, style: const TextStyle(color: AppColors.textSecondary)))
                           : ListView.builder(
                               itemCount: _sessionLogs.length,
                               itemBuilder: (context, index) {
@@ -404,9 +406,9 @@ class _RecorderScreenState extends ConsumerState<RecorderScreen> {
 
                                     // 3. スナックバーで通知
                                     if (context.mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('Set deleted')),
-                                      );
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text(AppLocalizations.of(context)!.setDeleted)),
+                                        );
                                     }
                                   },
                                   child: ListTile(
