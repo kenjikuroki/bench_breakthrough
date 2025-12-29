@@ -36,6 +36,10 @@
   "privacyPolicy": "Política de Privacidad",
   "termsOfService": "Términos de Servicio",
   "appVersion": "Versión",
+  "membership": "Membresía",
+  "proMember": "Miembro PRO",
+  "freePlan": "Plan Gratuito",
+  "restorePurchases": "Restaurar Compras",
 
   "motivation1": "¿Por qué preocuparse? Solo levántalo.",
   "motivation2": "Basta de charlas. Carga los discos.",

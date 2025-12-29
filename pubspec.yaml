@@ -49,6 +49,8 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   intl: ^0.20.2
+  in_app_purchase: ^3.2.3
+  flutter_markdown: ^0.7.7+1
 
 dev_dependencies:
   flutter_test:
@@ -82,6 +84,10 @@ flutter:
   assets:
     - assets/icons/
     - assets/images/
+    - assets/docs/
+    - assets/docs/en/
+    - assets/docs/ja/
+    - assets/docs/es/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

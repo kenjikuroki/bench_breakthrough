@@ -36,6 +36,10 @@
   "privacyPolicy": "Privacy Policy",
   "termsOfService": "Terms of Service",
   "appVersion": "App Version",
+  "membership": "Membership",
+  "proMember": "PRO Member",
+  "freePlan": "Free Plan",
+  "restorePurchases": "Restore Purchases",
 
   "motivation1": "Why worry? Just lift it.",
   "motivation2": "Stop talking. Load the plates.",

@@ -17,6 +17,7 @@ import 'dashboard_provider.dart';
 import 'package:bench_breakthrough/features/dashboard/motivation_provider.dart';
 import 'package:bench_breakthrough/l10n/generated/app_localizations.dart';
 import 'package:bench_breakthrough/features/diagnosis/diagnosis_screen.dart';
+import '../subscription/purchase_service.dart';
 
 
 enum HistoryMode {
@@ -35,9 +36,7 @@ class DashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
-  // プレミアム会員かどうかのフラグ
-  bool _isPremiumMember = false; 
-
+  // 画面撮影用のキー
   // 画面撮影用のキー
   final GlobalKey _graphKey = GlobalKey();
 
@@ -47,7 +46,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   HistoryMode _historyMode = HistoryMode.chart; // デフォルトはグラフモード
 
   Future<void> _captureAndShare() async {
-    if (!_isPremiumMember) {
+    final isPremium = ref.read(isPremiumProvider).valueOrNull ?? false;
+    if (!isPremium) {
       _showPremiumDialog("シェア機能");
       return;
     }
@@ -93,13 +93,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
             child: Text("${AppLocalizations.of(context)!.upgrade} (¥480)", style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
             onPressed: () {
-              setState(() {
-                _isPremiumMember = true;
-              });
+              ref.read(purchaseServiceProvider.notifier).buyPremium();
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(AppLocalizations.of(context)!.premiumSuccess))
-              );
             },
           ),
         ],
@@ -112,6 +107,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     // データ取得
     final currentMaxAsync = ref.watch(currentMaxProvider);
     final historyAsync = ref.watch(workoutHistoryProvider);
+    final isPremium = ref.watch(isPremiumProvider).valueOrNull ?? false;
 
     // 設定値取得 (Unit)
     final isLbs = ref.watch(isLbsProvider);
@@ -367,30 +363,31 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                           scale: isOverTarget ? 1.0 : 0.5,
                                           curve: Curves.elasticOut,
                                           child: Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                                            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
                                             decoration: BoxDecoration(
-                                              color: Colors.black.withValues(alpha: 0.7),
-                                              borderRadius: BorderRadius.circular(10),
-                                              border: Border.all(color: AppColors.accent, width: 2),
+                                              color: Colors.black.withValues(alpha: 0.8),
+                                              borderRadius: BorderRadius.circular(16),
+                                              border: Border.all(color: AppColors.accent, width: 4),
                                             ),
                                             child: Column(
                                               mainAxisSize: MainAxisSize.min,
                                               children: [
                                                   const Text(
-                                                    "LIMIT BREAK!", // Assuming this is kept in English as a stylistic choice or use AppLocalizations.of(context)!.limitBreak
+                                                    "LIMIT BREAK!", 
                                                     style: TextStyle(
                                                       color: AppColors.accent,
                                                       fontWeight: FontWeight.w900,
-                                                      fontSize: 24,
+                                                      fontSize: 36,
                                                       fontStyle: FontStyle.italic,
                                                       shadows: [
-                                                        Shadow(blurRadius: 10, color: AppColors.accent, offset: Offset(0,0))
+                                                        Shadow(blurRadius: 15, color: AppColors.accent, offset: Offset(0,0))
                                                       ]
                                                     ),
                                                   ),
+                                                  const SizedBox(height: 8),
                                                   Text(
                                                     "${formatWeight(targetWeight)}$unitString ${AppLocalizations.of(context)!.limitBreakMsg}",
-                                                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                                                    style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
                                                   ),
                                               ],
                                             ),
@@ -420,7 +417,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                   padding: const EdgeInsets.only(top: 4.0),
                                   child: Text(
                                     "${formatWeight(targetWeight)}$unitString",
-                                    style: const TextStyle(color: AppColors.accent, fontWeight: FontWeight.bold),
+                                    style: const TextStyle(
+                                      color: AppColors.accent, 
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 22, // Increased from default
+                                      shadows: [
+                                        Shadow(blurRadius: 2, color: Colors.black, offset: Offset(1, 1))
+                                      ]
+                                    ),
                                   ),
                                 ),
                               ),
@@ -536,7 +540,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         // Panel Content
                         Expanded(
                           child: _historyMode == HistoryMode.chart
-                            ? _buildChart(historyAsync, unitString, isLbs)
+                            ? _buildChart(historyAsync, unitString, isLbs, isPremium)
                             : _historyMode == HistoryMode.list
                               ? _buildHistoryList(historyAsync, unitString, isLbs)
                               : _buildDiagnosisPanel(currentMax),
@@ -597,10 +601,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     }
   }
 
-  Widget _buildChart(AsyncValue<List<WorkoutHistoryItem>> historyAsync, String unitString, bool isLbs) {
+  Widget _buildChart(AsyncValue<List<WorkoutHistoryItem>> historyAsync, String unitString, bool isLbs, bool isPremium) {
     return GestureDetector(
       onTap: () {
-        if (!_isPremiumMember) _showPremiumDialog(AppLocalizations.of(context)!.maxWeight);
+        final isPremium = ref.read(isPremiumProvider).valueOrNull ?? false;
+        if (!isPremium) _showPremiumDialog(AppLocalizations.of(context)!.maxWeight);
       },
       child: Container(
         padding: const EdgeInsets.only(right: 20, top: 10, bottom: 10),
@@ -660,7 +665,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 );
               }
             ),
-            if (!_isPremiumMember)
+            if (!isPremium)
               Container(
                 width: double.infinity,
                 height: double.infinity,

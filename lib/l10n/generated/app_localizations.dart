@@ -304,6 +304,30 @@ abstract class AppLocalizations {
   /// **'App Version'**
   String get appVersion;
 
+  /// No description provided for @membership.
+  ///
+  /// In en, this message translates to:
+  /// **'Membership'**
+  String get membership;
+
+  /// No description provided for @proMember.
+  ///
+  /// In en, this message translates to:
+  /// **'PRO Member'**
+  String get proMember;
+
+  /// No description provided for @freePlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Free Plan'**
+  String get freePlan;
+
+  /// No description provided for @restorePurchases.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore Purchases'**
+  String get restorePurchases;
+
   /// No description provided for @motivation1.
   ///
   /// In en, this message translates to:

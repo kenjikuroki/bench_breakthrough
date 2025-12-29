@@ -112,6 +112,18 @@ class AppLocalizationsEs extends AppLocalizations {
   String get appVersion => 'Versión';
 
   @override
+  String get membership => 'Membresía';
+
+  @override
+  String get proMember => 'Miembro PRO';
+
+  @override
+  String get freePlan => 'Plan Gratuito';
+
+  @override
+  String get restorePurchases => 'Restaurar Compras';
+
+  @override
   String get motivation1 => '¿Por qué preocuparse? Solo levántalo.';
 
   @override

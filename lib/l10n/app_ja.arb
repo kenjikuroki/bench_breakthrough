@@ -36,6 +36,10 @@
   "privacyPolicy": "プライバシーポリシー",
   "termsOfService": "利用規約",
   "appVersion": "バージョン",
+  "membership": "メンバーシップ",
+  "proMember": "PRO メンバー",
+  "freePlan": "フリープラン",
+  "restorePurchases": "購入を復元",
 
   "motivation1": "何を悩んでいる？今日も持ち上げるだけだ。",
   "motivation2": "御託はいい。プレートを付けろ。",

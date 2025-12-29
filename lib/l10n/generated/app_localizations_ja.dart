@@ -112,6 +112,18 @@ class AppLocalizationsJa extends AppLocalizations {
   String get appVersion => 'バージョン';
 
   @override
+  String get membership => 'メンバーシップ';
+
+  @override
+  String get proMember => 'PRO メンバー';
+
+  @override
+  String get freePlan => 'フリープラン';
+
+  @override
+  String get restorePurchases => '購入を復元';
+
+  @override
   String get motivation1 => '何を悩んでいる？今日も持ち上げるだけだ。';
 
   @override

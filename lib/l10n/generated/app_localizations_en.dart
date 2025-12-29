@@ -112,6 +112,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appVersion => 'App Version';
 
   @override
+  String get membership => 'Membership';
+
+  @override
+  String get proMember => 'PRO Member';
+
+  @override
+  String get freePlan => 'Free Plan';
+
+  @override
+  String get restorePurchases => 'Restore Purchases';
+
+  @override
   String get motivation1 => 'Why worry? Just lift it.';
 
   @override

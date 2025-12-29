@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bench_breakthrough/l10n/generated/app_localizations.dart';
 import '../../core/theme/app_colors.dart';
 import 'settings_provider.dart';
+import '../subscription/purchase_service.dart';
+
+import 'package:bench_breakthrough/features/settings/policy_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -22,6 +25,11 @@ class SettingsScreen extends ConsumerWidget {
       body: ListView(
         children: [
           const SizedBox(height: 20),
+          _buildSectionHeader(AppLocalizations.of(context)!.membership.toUpperCase()),
+          _buildMembershipSection(context, ref),
+          
+          const Divider(color: Colors.white24, height: 40),
+
           _buildSectionHeader(AppLocalizations.of(context)!.general.toUpperCase()),
           SwitchListTile(
             title: Text(AppLocalizations.of(context)!.usePounds, style: const TextStyle(color: Colors.white)),
@@ -44,14 +52,30 @@ class SettingsScreen extends ConsumerWidget {
             title: Text(AppLocalizations.of(context)!.privacyPolicy, style: const TextStyle(color: Colors.white)),
             trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 16),
             onTap: () {
-              // TODO: Open URL
+              Navigator.push(
+                context, 
+                MaterialPageRoute(
+                  builder: (_) => PolicyScreen(
+                    fileName: 'privacy.md', 
+                    title: AppLocalizations.of(context)!.privacyPolicy
+                  ),
+                ),
+              );
             },
           ),
            ListTile(
             title: Text(AppLocalizations.of(context)!.termsOfService, style: const TextStyle(color: Colors.white)),
             trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 16),
              onTap: () {
-              // TODO: Open URL
+              Navigator.push(
+                context, 
+                MaterialPageRoute(
+                  builder: (_) => PolicyScreen(
+                    fileName: 'terms.md', 
+                    title: AppLocalizations.of(context)!.termsOfService
+                  ),
+                ),
+              );
             },
           ),
            ListTile(
@@ -60,6 +84,46 @@ class SettingsScreen extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildMembershipSection(BuildContext context, WidgetRef ref) {
+    final isPremium = ref.watch(isPremiumProvider).valueOrNull ?? false;
+    final l10n = AppLocalizations.of(context)!;
+
+    return Column(
+      children: [
+        ListTile(
+          title: Text(l10n.membership, style: const TextStyle(color: Colors.white)),
+          subtitle: Text(
+            isPremium ? l10n.proMember : l10n.freePlan,
+            style: TextStyle(
+              color: isPremium ? AppColors.accent : Colors.grey,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          trailing: isPremium 
+              ? const Icon(Icons.check_circle, color: AppColors.accent)
+              : ElevatedButton(
+                  onPressed: () {
+                    ref.read(purchaseServiceProvider.notifier).buyPremium();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.accent,
+                    foregroundColor: Colors.black,
+                  ),
+                  child: Text(l10n.upgrade),
+                ),
+        ),
+        if (!isPremium)
+          ListTile(
+            title: Text(l10n.restorePurchases, style: const TextStyle(color: Colors.white)),
+            trailing: const Icon(Icons.refresh, color: Colors.grey),
+            onTap: () {
+              ref.read(purchaseServiceProvider.notifier).restore();
+            },
+          ),
+      ],
     );
   }
 
