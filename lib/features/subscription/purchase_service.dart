@@ -14,7 +14,7 @@ class PurchaseService extends _$PurchaseService {
   StreamSubscription<List<PurchaseDetails>>? _subscription;
   
   // Product ID (Replace with your actual ID)
-  static const String _premiumProductId = 'com.example.bench_breakthrough.premium'; 
+  static const String _premiumProductId = 'app.bench_breakthrough.premium_unlock'; 
 
   @override
   Future<void> build() async {
@@ -41,8 +41,8 @@ class PurchaseService extends _$PurchaseService {
       },
     );
     
-    // 復元処理（起動時にチェック）
-    await _iap.restorePurchases();
+    // 復元処理（起動時にチェック）は行わない
+    // await _iap.restorePurchases();
   }
 
   /// 課金開始

@@ -181,7 +181,7 @@ abstract class AppLocalizations {
   /// No description provided for @premiumBody.
   ///
   /// In en, this message translates to:
-  /// **'To use this feature, you need to subscribe to Premium.\n\nCheck your growth trajectory with the estimated 1RM graph!'**
+  /// **'To use this feature, you need to subscribe to Premium.\n\n- Remove Ads\n- Unlock Graphs, History, and Advice'**
   String get premiumBody;
 
   /// No description provided for @cancel.

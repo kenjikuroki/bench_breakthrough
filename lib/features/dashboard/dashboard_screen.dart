@@ -109,6 +109,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final historyAsync = ref.watch(workoutHistoryProvider);
     final isPremium = ref.watch(isPremiumProvider).valueOrNull ?? false;
 
+    // 課金サービスの初期化（ストリーム監視開始のため）を確実に行う
+    ref.watch(purchaseServiceProvider);
+
     // 設定値取得 (Unit)
     final isLbs = ref.watch(isLbsProvider);
     final unitString = ref.watch(unitStringProvider);

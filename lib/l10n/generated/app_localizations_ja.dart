@@ -49,7 +49,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get premiumBody =>
-      'この機能を利用するには、プレミアム会員への登録が必要です。\n\n推定1RMグラフで成長の軌跡を確認しましょう！';
+      'この機能を利用するには、プレミアム会員への登録が必要です。\n\n・広告の非表示\n・グラフ、履歴、アドバイス機能のアンロック';
 
   @override
   String get cancel => 'キャンセル';

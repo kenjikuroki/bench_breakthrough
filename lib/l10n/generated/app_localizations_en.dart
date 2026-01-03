@@ -49,7 +49,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get premiumBody =>
-      'To use this feature, you need to subscribe to Premium.\n\nCheck your growth trajectory with the estimated 1RM graph!';
+      'To use this feature, you need to subscribe to Premium.\n\n- Remove Ads\n- Unlock Graphs, History, and Advice';
 
   @override
   String get cancel => 'Cancel';

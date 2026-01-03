@@ -49,14 +49,25 @@ class _RecorderScreenState extends ConsumerState<RecorderScreen> {
   
   // テスト用ID (本番時は差し替えが必要)
   // Android Test ID
+  // TODO: Replace with your real Android Ad Unit ID (ca-app-pub-xxxxxxxxxxxxxxxx/yyyyyyyyyy)
   final String _adUnitIdAndroid = 'ca-app-pub-3940256099942544/1033173712';
   // iOS Test ID
+  // TODO: Replace with your real iOS Ad Unit ID (ca-app-pub-xxxxxxxxxxxxxxxx/yyyyyyyyyy)
   final String _adUnitIdIos = 'ca-app-pub-3940256099942544/4411468910';
 
   String get _adUnitId {
     if (Platform.isAndroid) return _adUnitIdAndroid;
     if (Platform.isIOS) return _adUnitIdIos;
     return ''; // Unsupported platform
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // モバイルのみ広告ロード (画面生成と同時に開始)
+    if (Platform.isAndroid || Platform.isIOS) {
+      _loadInterstitialAd();
+    }
   }
 
   @override
@@ -86,10 +97,8 @@ class _RecorderScreenState extends ConsumerState<RecorderScreen> {
         (a - targetVal).abs() < (b - targetVal).abs() ? a : b);
 
       _loadTodaysSession();
-      // モバイルのみ広告ロード
-      if (Platform.isAndroid || Platform.isIOS) {
-        _loadInterstitialAd(); 
-      }
+      _loadTodaysSession();
+      // 広告ロードはinitStateに移動済み
       _initialized = true;
     }
   }
