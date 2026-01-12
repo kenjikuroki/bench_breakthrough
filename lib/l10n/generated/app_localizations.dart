@@ -262,6 +262,24 @@ abstract class AppLocalizations {
   /// **'Set deleted'**
   String get setDeleted;
 
+  /// No description provided for @setSavedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'SAVED!'**
+  String get setSavedTitle;
+
+  /// No description provided for @setSavedMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Great job!'**
+  String get setSavedMsg;
+
+  /// No description provided for @ok.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get ok;
+
   /// No description provided for @settings.
   ///
   /// In en, this message translates to:

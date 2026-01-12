@@ -1,1 +1,2 @@
-"NSUserTrackingUsageDescription" = "この識別子は、お客様にパーソナライズされた広告を配信するために使用されます。";
+"NSUserTrackingUsageDescription" = "広告（AdMobなど）のために、ユーザーのID（IDFA）を取得するため。";
+"CFBundleDisplayName" = "鬼ベンチ100";

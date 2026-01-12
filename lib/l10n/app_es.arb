@@ -28,6 +28,9 @@
   "todaysSets": "SERIES DE HOY",
   "noSetsYet": "Sin registros aún",
   "setDeleted": "Serie eliminada",
+  "setSavedTitle": "¡GUARDADO!",
+  "setSavedMsg": "¡Bien hecho!",
+  "ok": "OK",
 
   "settings": "Ajustes",
   "general": "General",

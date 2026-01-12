@@ -28,6 +28,9 @@
   "todaysSets": "今日のセット",
   "noSetsYet": "まだ記録がありません",
   "setDeleted": "削除しました",
+  "setSavedTitle": "保存しました。",
+  "setSavedMsg": "よくやった！",
+  "ok": "OK",
 
   "settings": "設定",
   "general": "一般",

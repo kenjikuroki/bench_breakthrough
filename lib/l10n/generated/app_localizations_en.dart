@@ -91,6 +91,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get setDeleted => 'Set deleted';
 
   @override
+  String get setSavedTitle => 'SAVED!';
+
+  @override
+  String get setSavedMsg => 'Great job!';
+
+  @override
+  String get ok => 'OK';
+
+  @override
   String get settings => 'Settings';
 
   @override

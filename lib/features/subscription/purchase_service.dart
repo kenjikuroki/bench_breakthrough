@@ -90,13 +90,18 @@ class PurchaseService extends _$PurchaseService {
           // 成功 or 復元
           final bool valid = await _verifyPurchase(purchaseDetails);
           if (valid) {
+             debugPrint('[PurchaseService] Purchase verified. Granting premium...');
              // プレミアム権限付与
              await ref.read(isPremiumProvider.notifier).setPremium(true);
+             debugPrint('[PurchaseService] Premium granted.');
+          } else {
+             debugPrint('[PurchaseService] Purchase verification failed.');
           }
         }
         
         if (purchaseDetails.pendingCompletePurchase) {
           await _iap.completePurchase(purchaseDetails);
+          debugPrint('[PurchaseService] Purchase completed (transaction finished).');
         }
       }
     }

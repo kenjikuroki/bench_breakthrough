@@ -28,6 +28,9 @@
   "todaysSets": "TODAY'S SETS",
   "noSetsYet": "No sets yet",
   "setDeleted": "Set deleted",
+  "setSavedTitle": "SAVED!",
+  "setSavedMsg": "Great job!",
+  "ok": "OK",
 
   "settings": "Settings",
   "general": "General",

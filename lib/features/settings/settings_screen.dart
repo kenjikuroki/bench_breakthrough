@@ -22,67 +22,72 @@ class SettingsScreen extends ConsumerWidget {
         title: Text(AppLocalizations.of(context)!.settings.toUpperCase(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: ListView(
-        children: [
-          const SizedBox(height: 20),
-          _buildSectionHeader(AppLocalizations.of(context)!.membership.toUpperCase()),
-          _buildMembershipSection(context, ref),
-          
-          const Divider(color: Colors.white24, height: 40),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: ListView(
+            children: [
+              const SizedBox(height: 20),
+              _buildSectionHeader(AppLocalizations.of(context)!.membership.toUpperCase()),
+              _buildMembershipSection(context, ref),
+              
+              const Divider(color: Colors.white24, height: 40),
 
-          _buildSectionHeader(AppLocalizations.of(context)!.general.toUpperCase()),
-          SwitchListTile(
-            title: Text(AppLocalizations.of(context)!.usePounds, style: const TextStyle(color: Colors.white)),
-            subtitle: Text(
-              isLbs ? 'Target: 225 lbs' : 'Target: 100 kg', 
-              style: const TextStyle(color: Colors.grey)
-            ),
-            value: isLbs,
-            activeColor: AppColors.accent,
-            inactiveTrackColor: Colors.grey[800],
-            onChanged: (value) {
-              ref.read(settingsProvider.notifier).toggleUnit();
-            },
-          ),
-          
-          const Divider(color: Colors.white24, height: 40),
+              _buildSectionHeader(AppLocalizations.of(context)!.general.toUpperCase()),
+              SwitchListTile(
+                title: Text(AppLocalizations.of(context)!.usePounds, style: const TextStyle(color: Colors.white)),
+                subtitle: Text(
+                  isLbs ? 'Target: 225 lbs' : 'Target: 100 kg', 
+                  style: const TextStyle(color: Colors.grey)
+                ),
+                value: isLbs,
+                activeColor: AppColors.accent,
+                inactiveTrackColor: Colors.grey[800],
+                onChanged: (value) {
+                  ref.read(settingsProvider.notifier).toggleUnit();
+                },
+              ),
+              
+              const Divider(color: Colors.white24, height: 40),
 
-          _buildSectionHeader(AppLocalizations.of(context)!.about.toUpperCase()),
-           ListTile(
-            title: Text(AppLocalizations.of(context)!.privacyPolicy, style: const TextStyle(color: Colors.white)),
-            trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 16),
-            onTap: () {
-              Navigator.push(
-                context, 
-                MaterialPageRoute(
-                  builder: (_) => PolicyScreen(
-                    fileName: 'privacy.md', 
-                    title: AppLocalizations.of(context)!.privacyPolicy
-                  ),
-                ),
-              );
-            },
+              _buildSectionHeader(AppLocalizations.of(context)!.about.toUpperCase()),
+               ListTile(
+                title: Text(AppLocalizations.of(context)!.privacyPolicy, style: const TextStyle(color: Colors.white)),
+                trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 16),
+                onTap: () {
+                  Navigator.push(
+                    context, 
+                    MaterialPageRoute(
+                      builder: (_) => PolicyScreen(
+                        fileName: 'privacy.md', 
+                        title: AppLocalizations.of(context)!.privacyPolicy
+                      ),
+                    ),
+                  );
+                },
+              ),
+               ListTile(
+                title: Text(AppLocalizations.of(context)!.termsOfService, style: const TextStyle(color: Colors.white)),
+                trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 16),
+                 onTap: () {
+                  Navigator.push(
+                    context, 
+                    MaterialPageRoute(
+                      builder: (_) => PolicyScreen(
+                        fileName: 'terms.md', 
+                        title: AppLocalizations.of(context)!.termsOfService
+                      ),
+                    ),
+                  );
+                },
+              ),
+               ListTile(
+                title: Text(AppLocalizations.of(context)!.appVersion, style: const TextStyle(color: Colors.white)),
+                trailing: const Text('1.0.9', style: TextStyle(color: Colors.grey)),
+              ),
+            ],
           ),
-           ListTile(
-            title: Text(AppLocalizations.of(context)!.termsOfService, style: const TextStyle(color: Colors.white)),
-            trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 16),
-             onTap: () {
-              Navigator.push(
-                context, 
-                MaterialPageRoute(
-                  builder: (_) => PolicyScreen(
-                    fileName: 'terms.md', 
-                    title: AppLocalizations.of(context)!.termsOfService
-                  ),
-                ),
-              );
-            },
-          ),
-           ListTile(
-            title: Text(AppLocalizations.of(context)!.appVersion, style: const TextStyle(color: Colors.white)),
-            trailing: const Text('1.0.0', style: TextStyle(color: Colors.grey)),
-          ),
-        ],
+        ),
       ),
     );
   }

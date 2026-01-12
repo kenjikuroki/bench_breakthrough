@@ -50,10 +50,10 @@ class _RecorderScreenState extends ConsumerState<RecorderScreen> {
   // テスト用ID (本番時は差し替えが必要)
   // Android Test ID
   // TODO: Replace with your real Android Ad Unit ID (ca-app-pub-xxxxxxxxxxxxxxxx/yyyyyyyyyy)
-  final String _adUnitIdAndroid = 'ca-app-pub-3940256099942544/1033173712';
+  final String _adUnitIdAndroid = 'ca-app-pub-3331079517737737/8161441830';
   // iOS Test ID
   // TODO: Replace with your real iOS Ad Unit ID (ca-app-pub-xxxxxxxxxxxxxxxx/yyyyyyyyyy)
-  final String _adUnitIdIos = 'ca-app-pub-3940256099942544/4411468910';
+  final String _adUnitIdIos = 'ca-app-pub-3331079517737737/8161441830';
 
   String get _adUnitId {
     if (Platform.isAndroid) return _adUnitIdAndroid;
@@ -238,8 +238,131 @@ class _RecorderScreenState extends ConsumerState<RecorderScreen> {
       setState(() {
         _sessionLogs.insert(0, newLog); // 最新を上に
       });
-      // 3. タイマー開始
+    // 3. スナックバーで通知 -> ポップアップに変更
+    // DB保存用に表示用データを取得 (既に計算済みだが、念のため再取得・整形)
+    final double displayedWeight = convertWeightToDisplay(weightInKg, _isLbs);
+    final String formattedWeight = formatWeight(displayedWeight);
+    final String unit = _isLbs ? 'lbs' : 'kg';
+
+       // タイマー開始
       _startTimer();
+      
+      showDialog(
+        context: context,
+        barrierDismissible: true, // ダイアログ外タップでも閉じられるように
+        builder: (context) {
+          return Dialog(
+            backgroundColor: Colors.transparent, // 背景透明にしてContainerで制御
+            insetPadding: const EdgeInsets.all(20),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 320), // iPad対策: 横幅制限
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: AppColors.surface, // ベースカラー
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppColors.primary, width: 2), // プレミアム感のあるボーダー
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.3),
+                      blurRadius: 15,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // アイコン
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.check_circle_outline,
+                        color: AppColors.primary,
+                        size: 48,
+                      ),
+                    ),
+                    const Gap(16),
+                    
+                    // タイトル
+                    Text(
+                      AppLocalizations.of(context)!.setSavedTitle,
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const Gap(8),
+                    
+                    // メッセージ
+                    Text(
+                      AppLocalizations.of(context)!.setSavedMsg,
+                      style: const TextStyle(
+                        color: Colors.white70, 
+                        fontSize: 16
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const Gap(24),
+                    
+                    // 記録内容 (強調表示)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.black26,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Center(
+                        child: Text(
+                          '$formattedWeight $unit x $_selectedReps reps',
+                          style: const TextStyle(
+                            color: AppColors.accent, // アクセントカラーで強調
+                            fontSize: 28,
+                            fontWeight: FontWeight.w900, // 極太フォント
+                            fontStyle: FontStyle.italic, // スポーティさ
+                          ),
+                        ),
+                      ),
+                    ),
+                    
+                    const Gap(24),
+                    
+                    // ボタン
+                    SizedBox(
+                      // double.infinityから変更して、横幅いっぱいにしつつもConstrainedBoxで制限される
+                      width: double.infinity, 
+                      height: 56, // 高さを見直し (50 -> 56)
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          elevation: 0,
+                        ),
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(
+                          AppLocalizations.of(context)!.ok, // 多言語対応
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      );
     }
   }
 
@@ -265,187 +388,200 @@ class _RecorderScreenState extends ConsumerState<RecorderScreen> {
         ],
       ),
       body: SafeArea(
-        child: Column(
-          children: [
-            // --- タイマー表示 ---
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                decoration: BoxDecoration(
-                  color: _isTimerRunning ? AppColors.surface : Colors.transparent,
-                  borderRadius: BorderRadius.circular(30),
-                  border: _isTimerRunning ? Border.all(color: AppColors.accent) : null,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.timer, color: _isTimerRunning ? AppColors.accent : AppColors.textSecondary),
-                    const Gap(8),
-                    Text(
-                      _timerString,
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: _isTimerRunning ? AppColors.accent : AppColors.textSecondary,
-                        fontFeatures: const [FontFeature.tabularFigures()], // 等幅数字
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600),
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  // --- タイマー表示 ---
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: _isTimerRunning ? AppColors.surface : Colors.transparent,
+                        borderRadius: BorderRadius.circular(30),
+                        border: _isTimerRunning ? Border.all(color: AppColors.accent) : null,
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            const Gap(10),
-
-            // --- リアルタイム計算結果 ---
-            Column(
-              children: [
-                Text(AppLocalizations.of(context)!.estimated1rm, 
-                  style: const TextStyle(color: AppColors.textSecondary, letterSpacing: 1.5)),
-                Text(
-                  '${currentEstMax.toStringAsFixed(1)} $unitLabel',
-                  style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                    color: AppColors.primary,
-                    fontSize: 56, 
-                  ),
-                ),
-              ],
-            ),
-
-            const Gap(20),
-
-            // --- 入力エリア (ドラムロール) ---
-            SizedBox(
-              height: 200, // 高さを少し詰める
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    // 重量
-                    Expanded(
-                      child: _buildPicker<double>(
-                        label: AppLocalizations.of(context)!.weight,
-                        unit: unitLabel,
-                        options: _weightOptions,
-                        selectedValue: _selectedWeight,
-                        onChanged: (value) => setState(() => _selectedWeight = value),
-                      ),
-                    ),
-                    const Gap(16),
-                    // 回数
-                    Expanded(
-                      child: _buildPicker<int>(
-                        label: AppLocalizations.of(context)!.reps,
-                        unit: 'reps',
-                        options: _repOptions,
-                        selectedValue: _selectedReps,
-                        onChanged: (value) => setState(() => _selectedReps = value),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            const Gap(24),
-
-            // --- 保存ボタン ---
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: _saveLog,
-                  child: Text(AppLocalizations.of(context)!.saveSet),
-                ),
-              ),
-            ),
-
-            const Gap(24),
-
-            // --- セッション履歴 ---
-            Expanded(
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                decoration: const BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Gap(16),
-                    Text(AppLocalizations.of(context)!.todaysSets, style: const TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.bold)),
-                    const Gap(8),
-                    Expanded(
-                      child: _sessionLogs.isEmpty
-                          ? Center(child: Text(AppLocalizations.of(context)!.noSetsYet, style: const TextStyle(color: AppColors.textSecondary)))
-                          : ListView.builder(
-                              itemCount: _sessionLogs.length,
-                              itemBuilder: (context, index) {
-                                final log = _sessionLogs[index];
-                                final setNumber = _sessionLogs.length - index;
-
-                                // 表示用に変換
-                                final double displayW = convertWeightToDisplay(log.weight, _isLbs);
-                                final double display1RM = convertWeightToDisplay(log.estimated1RM ?? 0, _isLbs);
-
-                                return Dismissible(
-                                  key: Key(log.id.toString()), // IDをキーにする
-                                  direction: DismissDirection.endToStart, // 右から左へスワイプ
-                                  background: Container(
-                                    alignment: Alignment.centerRight,
-                                    padding: const EdgeInsets.only(right: 20),
-                                    color: AppColors.error,
-                                    child: const Icon(Icons.delete, color: Colors.white),
-                                  ),
-                                  onDismissed: (direction) async {
-                                    // 1. リストから削除 (画面更新)
-                                    setState(() {
-                                      _sessionLogs.removeAt(index);
-                                    });
-
-                                    // 2. DBから削除
-                                    final service = IsarService();
-                                    await service.deleteLog(log.id);
-
-                                    // 3. スナックバーで通知
-                                    if (context.mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text(AppLocalizations.of(context)!.setDeleted)),
-                                        );
-                                    }
-                                  },
-                                  child: ListTile(
-                                    contentPadding: EdgeInsets.zero,
-                                    leading: CircleAvatar(
-                                      backgroundColor: AppColors.primary,
-                                      foregroundColor: Colors.white,
-                                      radius: 12,
-                                      child: Text('$setNumber', style: const TextStyle(fontSize: 12)),
-                                    ),
-                                    title: Text(
-                                      '${formatWeight(displayW)} $unitLabel x ${log.reps ?? 1} reps',
-                                      style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                                    ),
-                                    trailing: Text(
-                                      '1RM: ${display1RM.toStringAsFixed(1)}',
-                                      style: const TextStyle(color: AppColors.textSecondary),
-                                    ),
-                                  ),
-                                );
-                              },
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.timer, color: _isTimerRunning ? AppColors.accent : AppColors.textSecondary),
+                          const Gap(8),
+                          Text(
+                            _timerString,
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: _isTimerRunning ? AppColors.accent : AppColors.textSecondary,
+                              fontFeatures: const [FontFeature.tabularFigures()], // 等幅数字
                             ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ],
-                ),
+                  ),
+          
+                  const Gap(10),
+          
+                  // --- リアルタイム計算結果 ---
+                  Column(
+                    children: [
+                      Text(AppLocalizations.of(context)!.estimated1rm, 
+                        style: const TextStyle(color: AppColors.textSecondary, letterSpacing: 1.5)),
+                      Text(
+                        '${currentEstMax.toStringAsFixed(1)} $unitLabel',
+                        style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                          color: AppColors.primary,
+                          fontSize: 56, 
+                        ),
+                      ),
+                    ],
+                  ),
+          
+                  const Gap(20),
+          
+                  // --- 入力エリア (ドラムロール) ---
+                  SizedBox(
+                    height: 200, // 高さを少し詰める
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        children: [
+                          // 重量
+                          Expanded(
+                            child: _buildPicker<double>(
+                              label: AppLocalizations.of(context)!.weight,
+                              unit: unitLabel,
+                              options: _weightOptions,
+                              selectedValue: _selectedWeight,
+                              onChanged: (value) => setState(() => _selectedWeight = value),
+                            ),
+                          ),
+                          const Gap(16),
+                          // 回数
+                          Expanded(
+                            child: _buildPicker<int>(
+                              label: AppLocalizations.of(context)!.reps,
+                              unit: 'reps',
+                              options: _repOptions,
+                              selectedValue: _selectedReps,
+                              onChanged: (value) => setState(() => _selectedReps = value),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+          
+                  const Gap(24),
+          
+                  // --- 保存ボタン ---
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: _saveLog,
+                        child: Text(AppLocalizations.of(context)!.saveSet),
+                      ),
+                    ),
+                  ),
+          
+                  const Gap(24),
+          
+                  // --- セッション履歴 ---
+                  // Expandedを削除してContainerのみにする
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    decoration: const BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Gap(16),
+                        Text(AppLocalizations.of(context)!.todaysSets, style: const TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.bold)),
+                        const Gap(8),
+                        // Expandedを削除し、ListViewをshrinkWrapにする
+                        _sessionLogs.isEmpty
+                            ? Container(
+                                height: 100,
+                                alignment: Alignment.center,
+                                child: Text(AppLocalizations.of(context)!.noSetsYet, style: const TextStyle(color: AppColors.textSecondary))
+                              )
+                            : ListView.builder(
+                                shrinkWrap: true, // 重要
+                                physics: const NeverScrollableScrollPhysics(), // 重要: 親のSingleChildScrollViewでスクロールする
+                                itemCount: _sessionLogs.length,
+                                itemBuilder: (context, index) {
+                                  final log = _sessionLogs[index];
+                                  final setNumber = _sessionLogs.length - index;
+          
+                                  // 表示用に変換
+                                  final double displayW = convertWeightToDisplay(log.weight, _isLbs);
+                                  final double display1RM = convertWeightToDisplay(log.estimated1RM ?? 0, _isLbs);
+          
+                                  return Dismissible(
+                                    key: Key(log.id.toString()), // IDをキーにする
+                                    direction: DismissDirection.endToStart, // 右から左へスワイプ
+                                    background: Container(
+                                      alignment: Alignment.centerRight,
+                                      padding: const EdgeInsets.only(right: 20),
+                                      color: AppColors.error,
+                                      child: const Icon(Icons.delete, color: Colors.white),
+                                    ),
+                                    onDismissed: (direction) async {
+                                      // 1. リストから削除 (画面更新)
+                                      setState(() {
+                                        _sessionLogs.removeAt(index);
+                                      });
+          
+                                      // 2. DBから削除
+                                      final service = IsarService();
+                                      await service.deleteLog(log.id);
+          
+                                      // 3. スナックバーで通知
+                                      if (context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(content: Text(AppLocalizations.of(context)!.setDeleted)),
+                                          );
+                                      }
+                                    },
+                                    child: ListTile(
+                                      contentPadding: EdgeInsets.zero,
+                                      leading: CircleAvatar(
+                                        backgroundColor: AppColors.primary,
+                                        foregroundColor: Colors.white,
+                                        radius: 12,
+                                        child: Text('$setNumber', style: const TextStyle(fontSize: 12)),
+                                      ),
+                                      title: Text(
+                                        '${formatWeight(displayW)} $unitLabel x ${log.reps ?? 1} reps',
+                                        style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                                      ),
+                                      trailing: Text(
+                                        '1RM: ${display1RM.toStringAsFixed(1)}',
+                                        style: const TextStyle(color: AppColors.textSecondary),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                        // 下部に余白を追加
+                        const Gap(40),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
         ),
       ),
     );

@@ -5,7 +5,10 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:bench_breakthrough/l10n/generated/app_localizations.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/app_colors.dart';
+import 'core/theme/app_colors.dart';
 import 'features/dashboard/dashboard_screen.dart';
+import 'features/subscription/purchase_service.dart';
 
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 
@@ -47,24 +50,32 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class StartupGate extends StatefulWidget {
+
+class StartupGate extends ConsumerStatefulWidget {
   final Widget child;
   const StartupGate({super.key, required this.child});
 
   @override
-  State<StartupGate> createState() => _StartupGateState();
+  ConsumerState<StartupGate> createState() => _StartupGateState();
 }
 
-class _StartupGateState extends State<StartupGate> {
+class _StartupGateState extends ConsumerState<StartupGate> {
+  bool _isInitialized = false;
+
   @override
   void initState() {
     super.initState();
+    // 画面描画後に初期化開始
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initTrackingAndAds();
+      _init();
     });
   }
 
-  Future<void> _initTrackingAndAds() async {
+  Future<void> _init() async {
+    // 1. 課金サービスの初期化 (ストリーム監視開始)
+    ref.read(purchaseServiceProvider);
+
+    // 2. ATT要求 (iOS)
     if (Platform.isIOS) {
       final status = await AppTrackingTransparency.trackingAuthorizationStatus;
       if (status == TrackingStatus.notDetermined) {
@@ -73,13 +84,36 @@ class _StartupGateState extends State<StartupGate> {
       }
     }
 
+    // 3. 広告初期化
     if (Platform.isAndroid || Platform.isIOS) {
       await MobileAds.instance.initialize();
+    }
+
+    // Isarの初期化などはmain()前に完了している想定だが、
+    // ここで何か待つ必要があればawaitする
+
+    // 初期化完了・最低でも少し待つ（スプラッシュを感じさせるため）
+    // await Future.delayed(const Duration(seconds: 1)); 
+
+    if (mounted) {
+      setState(() {
+        _isInitialized = true;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (!_isInitialized) {
+      return Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: CircularProgressIndicator(
+            color: AppColors.accent, // アクセントカラーを使用
+          ),
+        ),
+      );
+    }
     return widget.child;
   }
 }

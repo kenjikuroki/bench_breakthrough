@@ -91,6 +91,15 @@ class AppLocalizationsEs extends AppLocalizations {
   String get setDeleted => 'Serie eliminada';
 
   @override
+  String get setSavedTitle => '¡GUARDADO!';
+
+  @override
+  String get setSavedMsg => '¡Bien hecho!';
+
+  @override
+  String get ok => 'OK';
+
+  @override
   String get settings => 'Ajustes';
 
   @override

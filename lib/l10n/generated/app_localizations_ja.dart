@@ -91,6 +91,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get setDeleted => '削除しました';
 
   @override
+  String get setSavedTitle => '保存しました。';
+
+  @override
+  String get setSavedMsg => 'よくやった！';
+
+  @override
+  String get ok => 'OK';
+
+  @override
   String get settings => '設定';
 
   @override
