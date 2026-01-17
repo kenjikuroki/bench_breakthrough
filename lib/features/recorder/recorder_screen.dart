@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:ui'; // FontFeatureのため
+import 'package:flutter/foundation.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'; // Riverpod
@@ -48,16 +49,27 @@ class _RecorderScreenState extends ConsumerState<RecorderScreen> {
   bool _isAdLoaded = false;
   
   // テスト用ID (本番時は差し替えが必要)
-  // Android Test ID
-  // TODO: Replace with your real Android Ad Unit ID (ca-app-pub-xxxxxxxxxxxxxxxx/yyyyyyyyyy)
-  final String _adUnitIdAndroid = 'ca-app-pub-3331079517737737/8161441830';
-  // iOS Test ID
-  // TODO: Replace with your real iOS Ad Unit ID (ca-app-pub-xxxxxxxxxxxxxxxx/yyyyyyyyyy)
-  final String _adUnitIdIos = 'ca-app-pub-3331079517737737/8161441830';
+  // Android Test ID (Google Default)
+  final String _adUnitIdAndroidTest = 'ca-app-pub-3940256099942544/1033173712';
+  
+  // iOS Test ID (Google Default)
+  final String _adUnitIdIosTest = 'ca-app-pub-3940256099942544/4411468910';
+
+  // 本番用ID (iOS)
+  final String _adUnitIdIosReal = 'ca-app-pub-3331079517737737/8161441830';
 
   String get _adUnitId {
-    if (Platform.isAndroid) return _adUnitIdAndroid;
-    if (Platform.isIOS) return _adUnitIdIos;
+    if (Platform.isAndroid) {
+      // Androidは現在リリース予定なしのため、常にTestIDを使用
+      return _adUnitIdAndroidTest;
+    } 
+    if (Platform.isIOS) {
+      // デバッグモード(開発中)ならTestID、リリースビルドなら本番ID
+      if (kDebugMode) {
+        return _adUnitIdIosTest;
+      }
+      return _adUnitIdIosReal;
+    }
     return ''; // Unsupported platform
   }
 
@@ -142,10 +154,25 @@ class _RecorderScreenState extends ConsumerState<RecorderScreen> {
       return;
     }
 
+    // クールダウンチェック (15分)
+    final lastAdTimeAsync = ref.read(lastAdTimeProvider);
+    final lastAdTime = lastAdTimeAsync.value;
+    if (lastAdTime != null) {
+      final diff = DateTime.now().difference(lastAdTime);
+      if (diff.inMinutes < 15) {
+        debugPrint('Ad skipped: Cooldown active (${diff.inMinutes} min < 15 min)');
+        Navigator.pop(context);
+        return;
+      }
+    }
+
     // 広告表示
     _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
-      onAdShowedFullScreenContent: (InterstitialAd ad) =>
-          debugPrint('ad onAdShowedFullScreenContent.'),
+      onAdShowedFullScreenContent: (InterstitialAd ad) {
+        debugPrint('ad onAdShowedFullScreenContent.');
+        // 広告が表示されたタイミングで時刻を記録
+        ref.read(lastAdTimeProvider.notifier).updateToNow();
+      },
       onAdDismissedFullScreenContent: (InterstitialAd ad) {
         debugPrint('$ad onAdDismissedFullScreenContent.');
         ad.dispose();

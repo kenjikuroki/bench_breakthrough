@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -86,4 +87,41 @@ String formatWeight(double value) {
   // 小数点以下があれば最大2桁まで表示し、末尾の0は消す（toStringAsFixedだと0が残るため単純化）
   // 0.25刻みに対応するため、必要な桁数だけ出す
   return value.toStringAsFixed(2).replaceAll(RegExp(r"([.]*0+)(?!.*\d)"), "");
+}
+
+// ---------------------------------------------------------
+// Ad Cooldown Logic (Manual Provider to avoid build_runner)
+// ---------------------------------------------------------
+
+final lastAdTimeProvider = StateNotifierProvider<LastAdTimeNotifier, AsyncValue<DateTime?>>((ref) {
+  return LastAdTimeNotifier();
+});
+
+class LastAdTimeNotifier extends StateNotifier<AsyncValue<DateTime?>> {
+  LastAdTimeNotifier() : super(const AsyncLoading()) {
+    _load();
+  }
+
+  static const _key = 'last_ad_time_milliseconds';
+
+  Future<void> _load() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final ms = prefs.getInt(_key);
+      if (ms != null) {
+        state = AsyncData(DateTime.fromMillisecondsSinceEpoch(ms));
+      } else {
+        state = const AsyncData(null);
+      }
+    } catch (e, st) {
+      state = AsyncError(e, st);
+    }
+  }
+
+  Future<void> updateToNow() async {
+    final now = DateTime.now();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_key, now.millisecondsSinceEpoch);
+    state = AsyncData(now);
+  }
 }
