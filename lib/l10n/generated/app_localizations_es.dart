@@ -432,4 +432,8 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get diagnosisSlumpTop3 =>
       'La potencia no sale con falta de energía. Revisa los hábitos de vida, como si la comida previa al entrenamiento y la hidratación fueron apropiadas.';
+
+  @override
+  String get sisterAppPromotion =>
+      'Usa esto para registrar tu entrenamiento de forma integral.';
 }

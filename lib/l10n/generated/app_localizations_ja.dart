@@ -431,4 +431,7 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get diagnosisSlumpTop3 =>
       'エネルギー不足では力は出ない。トレーニング前の食事や水分補給が適切だったか、生活習慣を見直してみよ。';
+
+  @override
+  String get sisterAppPromotion => '総合的にトレーニングを記録するならこれを使え。';
 }

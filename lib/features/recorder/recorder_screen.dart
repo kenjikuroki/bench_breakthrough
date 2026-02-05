@@ -115,6 +115,10 @@ class _RecorderScreenState extends ConsumerState<RecorderScreen> {
     }
   }
 
+  // リトライ回数管理
+  int _adLoadAttempts = 0;
+  static const int _maxAdLoadAttempts = 3;
+
   // 広告ロード処理
   void _loadInterstitialAd() {
     if (_adUnitId.isEmpty) return;
@@ -128,11 +132,22 @@ class _RecorderScreenState extends ConsumerState<RecorderScreen> {
           _interstitialAd = ad;
           _isAdLoaded = true;
           _interstitialAd!.setImmersiveMode(true);
+          _adLoadAttempts = 0; // 成功したらリセット
         },
         onAdFailedToLoad: (LoadAdError error) {
           debugPrint('InterstitialAd failed to load: $error.');
           _interstitialAd = null;
           _isAdLoaded = false;
+          
+          // リトライロジック (最大3回)
+          _adLoadAttempts++;
+          if (_adLoadAttempts <= _maxAdLoadAttempts) {
+            debugPrint('Retrying ad load... Attempt: $_adLoadAttempts');
+            // 指数バックオフ的な遅延を入れる (1秒, 2秒, 4秒...)
+            Future.delayed(Duration(seconds: 1 * _adLoadAttempts), () {
+               if (mounted) _loadInterstitialAd();
+            });
+          }
         },
       ),
     );
@@ -154,17 +169,7 @@ class _RecorderScreenState extends ConsumerState<RecorderScreen> {
       return;
     }
 
-    // クールダウンチェック (15分)
-    final lastAdTimeAsync = ref.read(lastAdTimeProvider);
-    final lastAdTime = lastAdTimeAsync.value;
-    if (lastAdTime != null) {
-      final diff = DateTime.now().difference(lastAdTime);
-      if (diff.inMinutes < 15) {
-        debugPrint('Ad skipped: Cooldown active (${diff.inMinutes} min < 15 min)');
-        Navigator.pop(context);
-        return;
-      }
-    }
+
 
     // 広告表示
     _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(

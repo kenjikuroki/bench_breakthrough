@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../core/theme/app_colors.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../recorder/recorder_screen.dart';
 import '../settings/settings_provider.dart';
 import '../settings/settings_screen.dart';
@@ -141,7 +142,69 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         Consumer(
                           builder: (context, ref, child) {
                             final messageId = ref.watch(motivationMessageIdProvider);
-                            // IDから翻訳を取得 (motivation1 ~ motivation21)
+                  // IDから翻訳を取得 (motivation1 ~ motivation21)
+                            // 0の場合は姉妹アプリPR
+                            if (messageId == 0) {
+                                return GestureDetector(
+                                  onTap: () async {
+                                    final Uri url = Uri.parse('https://apps.apple.com/app/id6751413919');
+                                    if (await canLaunchUrl(url)) {
+                                      await launchUrl(url);
+                                    }
+                                  },
+                                  child: Container(
+                                    width: double.infinity,
+                                    margin: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF212121),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: Colors.white12),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        ClipRRect(
+                                          borderRadius: BorderRadius.circular(8),
+                                          child: Image.asset(
+                                            'assets/images/sister_app_icon.png',
+                                            width: 60,
+                                            height: 60,
+                                            fit: BoxFit.cover,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                "RECOMMENDATION",
+                                                style: TextStyle(
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.w900,
+                                                  color: Colors.amber.shade700,
+                                                  letterSpacing: 1.5,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                AppLocalizations.of(context)!.sisterAppPromotion,
+                                                style: const TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const Icon(Icons.arrow_forward_ios, color: Colors.white54, size: 16),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                            }
+
                             String message = "";
                             final l10n = AppLocalizations.of(context)!;
                             switch(messageId) {
@@ -568,6 +631,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       ),
                     );
                     ref.invalidate(currentMaxProvider);
+                    ref.invalidate(motivationMessageIdProvider);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,

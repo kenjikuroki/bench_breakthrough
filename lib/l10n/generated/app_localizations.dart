@@ -855,6 +855,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Power doesn\'t come out with energy shortage. Review lifestyle habits, like if pre-workout meal and hydration were appropriate.'**
   String get diagnosisSlumpTop3;
+
+  /// No description provided for @sisterAppPromotion.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this to record your training comprehensively.'**
+  String get sisterAppPromotion;
 }
 
 class _AppLocalizationsDelegate

@@ -432,4 +432,8 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get diagnosisSlumpTop3 =>
       'Power doesn\'t come out with energy shortage. Review lifestyle habits, like if pre-workout meal and hydration were appropriate.';
+
+  @override
+  String get sisterAppPromotion =>
+      'Use this to record your training comprehensively.';
 }
